@@ -187,6 +187,7 @@ namespace TorLister
 
             DirectorySources = Sources.ToArray();
             TorNodes = Nodes.ToArray();
+            Signatures = Sig.ToArray();
         }
 
         private DirectorySignature LoadSig(StreamReader SR, string Line)
