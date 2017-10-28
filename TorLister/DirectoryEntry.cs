@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 
 namespace TorLister
@@ -16,12 +17,13 @@ namespace TorLister
         {
             if (string.IsNullOrEmpty(SourceLine))
             {
-                throw new ArgumentException("Invalid Source Line. Needs 6 Parts");
+                throw new ArgumentException("Invalid Source Line. Needs 7 Parts");
             }
             var Parts = SourceLine.Split(' ');
 
-            if (Parts.Length == 6)
+            if (Parts.Length == 7 && Parts[0] == "dir-source")
             {
+                Parts = Parts.Skip(1).ToArray();
                 Name = Parts[0];
                 if (Tools.IsSHA1(Parts[1]))
                 {
@@ -53,7 +55,7 @@ namespace TorLister
             }
             else
             {
-                throw new ArgumentException("Invalid Source Line. Needs 6 Parts");
+                throw new ArgumentException("Invalid Source Line. Needs 7 Parts");
             }
 
 
