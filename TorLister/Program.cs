@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TorLister
 {
@@ -10,6 +6,12 @@ namespace TorLister
     {
         static void Main(string[] args)
         {
+            foreach (var Auth in Authorities.GetAuthorities())
+            {
+                Console.WriteLine(Auth);
+            }
+            Console.WriteLine("#END");
+            Console.ReadKey(true);
         }
     }
 }
