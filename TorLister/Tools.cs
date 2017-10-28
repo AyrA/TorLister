@@ -92,17 +92,6 @@ namespace TorLister
                 {
                     Output.Write(buffer, 0, Readed);
                 }
-                /*
-                try
-                {
-                    Output.Write(buffer, 0, Readed = Input.read(buffer, 0, buffer.Length));
-                    Total += Readed;
-                }
-                catch (System.Exception ex)
-                {
-                    System.Console.Error.WriteLine(ex.Message);
-                }
-                //*/
             }
             while (Readed > 0);
             return Total;
