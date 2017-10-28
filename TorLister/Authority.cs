@@ -18,6 +18,11 @@ namespace TorLister
         public const string TOR_DIR = "/tor/status/all.z";
 
         /// <summary>
+        /// HTTP Path to get All Nodes in a condensed Format
+        /// </summary>
+        public const string TOR_CONSENSUS = "/tor/status-vote/current/consensus-microdesc.z";
+
+        /// <summary>
         /// Gets or Sets the Authority Name
         /// </summary>
         public string Name
@@ -154,7 +159,7 @@ namespace TorLister
                 {
                     try
                     {
-                        return await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_DIR}");
+                        return await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}");
                     }
                     catch
                     {
@@ -166,7 +171,7 @@ namespace TorLister
             {
                 using (var WC = new WebClient())
                 {
-                    return await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_DIR}");
+                    return await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}");
                 }
             }
             throw new Exception("Can't download from either IPv4 or IPv6");
