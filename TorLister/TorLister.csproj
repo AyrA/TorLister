@@ -45,6 +45,7 @@
     <Compile Include="Authorities.cs" />
     <Compile Include="Authority.cs" />
     <Compile Include="Directory.cs" />
+    <Compile Include="DirectoryEntry.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RandValue.cs" />
