@@ -11,7 +11,11 @@ namespace TorLister
             
             var Consensus = new Directory(Auth.Random().DownloadNodes());
 
-            Console.WriteLine(string.Join("\r\n",Consensus.TorNodes.Select(m => m.IP.ToString())));
+            Console.WriteLine("Flags Count:");
+            foreach (var S in Consensus.KnownFlags)
+            {
+                Console.WriteLine("{0}={1}", S, Consensus.TorNodes.Where(m => m.Services.Contains(S)).Distinct().Count());
+            }
 
             Console.WriteLine("#END");
             Console.ReadKey(true);
