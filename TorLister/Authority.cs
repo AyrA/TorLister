@@ -1,9 +1,9 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace TorLister
@@ -154,10 +154,10 @@ namespace TorLister
         public async Task<string> DownloadNodesAsync()
         {
 #if DEBUG
-            if (File.Exists("consensus.txt"))
+            if (File.Exists("consensus.z"))
             {
                 Console.Error.WriteLine("Getting consensus from cache...");
-                return File.ReadAllText("consensus.txt");
+                return Decompress(File.ReadAllBytes("consensus.z"));
             }
 #endif
             Validate(true);
@@ -168,10 +168,10 @@ namespace TorLister
                     try
                     {
 #if DEBUG
-                        File.WriteAllText("consensus.txt", await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
-                        return File.ReadAllText("consensus.txt");
+                        await WC.DownloadFileTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}", "consensus.z");
+                        return Decompress(File.ReadAllBytes("consensus.z"));
 #else
-                        return await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}");
+                        return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
 #endif
                     }
                     catch
@@ -185,10 +185,10 @@ namespace TorLister
                 using (var WC = new WebClient())
                 {
 #if DEBUG
-                    File.WriteAllText("consensus.txt", await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
-                    return File.ReadAllText("consensus.txt");
+                    await WC.DownloadFileTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}", "consensus.z");
+                    return Decompress(File.ReadAllBytes("consensus.z"));
 #else
-                        return await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}");
+                    return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
 #endif
                 }
             }
@@ -201,7 +201,19 @@ namespace TorLister
         /// <returns>Node File</returns>
         public string DownloadNodes()
         {
-            return DownloadNodesAsync().Result;
+            var T = DownloadNodesAsync();
+            try
+            {
+                T.Wait();
+            }
+            catch
+            {
+            }
+            if (T.IsFaulted)
+            {
+                throw T.Exception.InnerExceptions.First();
+            }
+            return T.Result;
         }
 
         /// <summary>
@@ -239,6 +251,21 @@ namespace TorLister
                 Port <= IPEndPoint.MaxPort &&
                 (IPv4Endpoint != null || IPv6Endpoint != null) &&
                 !string.IsNullOrEmpty(Key);
+        }
+
+        private string Decompress(byte[] Data)
+        {
+            using (var IN = new MemoryStream(Data, false))
+            {
+                using (var OUT = new MemoryStream())
+                {
+                    using (var Comp = new zlib.ZInputStream(IN))
+                    {
+                        Tools.Decompress(Comp, OUT);
+                    }
+                    return Encoding.UTF8.GetString(OUT.ToArray());
+                }
+            }
         }
 
         /// <summary>
