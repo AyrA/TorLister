@@ -76,7 +76,7 @@ namespace TorLister
             if (Segments.Length == 8)
             {
                 Name = Segments[1];
-                Hash = Convert.FromBase64String(Segments[2]);
+                Hash = Convert.FromBase64String(Segments[2]+"=");
                 OnlineSince = DateTime.Parse($"{Segments[3]}T{Segments[4]}Z");
                 IP = IPAddress.Parse(Segments[5]);
                 OrPort = ushort.Parse(Segments[6]);
