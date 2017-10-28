@@ -101,10 +101,19 @@ namespace TorLister
                             }
                             break;
                         case "ipv6":
-                            IPv6Endpoint = Tools.ParseEP(Value);
+                            try
+                            {
+                                IPv6Endpoint = Tools.ParseEP(Value);
+
+                            }
+                            catch (Exception ex)
+                            {
+                                //Throw proper Error message
+                                throw new Exception($"Invalid IPv6 Endpoint segment: {Value}", ex);
+                            }
                             break;
                         default:
-                            //Unsupported entry type
+                            //Unsupported entry type. We should eventually throw exceptions here
                             break;
                     }
                 }
