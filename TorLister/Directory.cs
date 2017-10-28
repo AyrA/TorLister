@@ -55,6 +55,18 @@ namespace TorLister
         public RandValue SharedRandCurrentValue
         { get; private set; }
 
+        public Dictionary<string,int> BandwidthWeights
+        { get; private set; }
+
+        public DirectoryEntry[] DirectorySources
+        { get; private set; }
+
+        public TorNode[] Nodes
+        { get; private set; }
+
+        public string[] Signatured
+        { get; private set; }
+
         /// <summary>
         /// Parses a Network Consensus
         /// </summary>
@@ -70,6 +82,7 @@ namespace TorLister
                     {
                         throw new ArgumentException("Directory Source doesn't looks like a Version 3 Microdescriptor");
                     }
+
                 }
             }
         }
