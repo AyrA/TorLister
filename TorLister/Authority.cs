@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -152,6 +153,13 @@ namespace TorLister
         /// <returns>Node File</returns>
         public async Task<string> DownloadNodesAsync()
         {
+#if DEBUG
+            if (File.Exists("consensus.txt"))
+            {
+                Console.Error.WriteLine("Getting consensus from cache...");
+                return File.ReadAllText("consensus.txt");
+            }
+#endif
             Validate(true);
             if (IPv6Endpoint != null)
             {
@@ -159,7 +167,12 @@ namespace TorLister
                 {
                     try
                     {
+#if DEBUG
+                        File.WriteAllText("consensus.txt", await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
+                        return File.ReadAllText("consensus.txt");
+#else
                         return await WC.DownloadStringTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}");
+#endif
                     }
                     catch
                     {
@@ -171,7 +184,12 @@ namespace TorLister
             {
                 using (var WC = new WebClient())
                 {
-                    return await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}");
+#if DEBUG
+                    File.WriteAllText("consensus.txt", await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
+                    return File.ReadAllText("consensus.txt");
+#else
+                        return await WC.DownloadStringTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}");
+#endif
                 }
             }
             throw new Exception("Can't download from either IPv4 or IPv6");
