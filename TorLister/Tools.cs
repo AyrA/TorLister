@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.IO;
+using System.Net;
 using System.Text.RegularExpressions;
 
 namespace TorLister
@@ -76,6 +77,35 @@ namespace TorLister
         {
             ushort p = 0;
             return !string.IsNullOrEmpty(Port) && ushort.TryParse(Port, out p);
+        }
+
+        public static long Decompress(zlib.ZInputStream Input, Stream Output)
+        {
+            int Readed = 0;
+            byte[] buffer = new byte[100000];
+            long Total = 0;
+
+            do
+            {
+                Readed = Input.read(buffer, 0, buffer.Length);
+                if (Readed > 0)
+                {
+                    Output.Write(buffer, 0, Readed);
+                }
+                /*
+                try
+                {
+                    Output.Write(buffer, 0, Readed = Input.read(buffer, 0, buffer.Length));
+                    Total += Readed;
+                }
+                catch (System.Exception ex)
+                {
+                    System.Console.Error.WriteLine(ex.Message);
+                }
+                //*/
+            }
+            while (Readed > 0);
+            return Total;
         }
     }
 }
