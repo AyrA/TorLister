@@ -15,32 +15,17 @@ namespace TorLister
         {
             List<Authority> Ret = new List<Authority>();
 
+            var Entry = Cache.Get("tor-source", TimeSpan.FromDays(1));
+
+            if (Entry != null)
+            {
+                return Tools.Deserialize<Authority[]>(Entry.Data);
+            }
+
             using (var WC = new WebClient())
             {
                 string Lines;
-#if DEBUG
-                if (!File.Exists("tor_config.c"))
-                {
-                    Console.Error.WriteLine("Downloading source from repository...");
-                    try
-                    {
-                        await WC.DownloadFileTaskAsync(new Uri(TOR_SOURCE), "tor_config.c");
-                    }
-                    catch
-                    {
-                        if (File.Exists("tor_config.c"))
-                        {
-                            File.Delete("tor_config.c");
-                        }
-                        return null;
-                    }
-                }
-                else
-                {
-                    Console.Error.WriteLine("Loading Source from cache...");
-                }
-                Lines = File.ReadAllText("tor_config.c");
-#else
+
                 try
                 {
                     Lines = await WC.DownloadStringTaskAsync(new Uri(TOR_SOURCE));
@@ -49,7 +34,6 @@ namespace TorLister
                 {
                     return null;
                 }
-#endif
 
                 //Trim the source file to the part, that contains the authorities
                 Lines = Lines.Substring(Lines.IndexOf("/** List of default directory authorities */"));
@@ -78,7 +62,9 @@ namespace TorLister
                     //remove more whitespace
                     Parts[i] = Parts[i].Trim();
                 }
-                return Parts.Select(m => new Authority(m)).ToArray();
+                var Authorities = Parts.Select(m => new Authority(m)).ToArray();
+                Cache.Add("tor-source", Tools.Serialize(Authorities), true);
+                return Authorities;
             }
         }
 
