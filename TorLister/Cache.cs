@@ -126,7 +126,10 @@ namespace TorLister
                     {
                         Name = "";
                     }
-
+                    if (Entries == null)
+                    {
+                        Entries = new CacheEntry[0];
+                    }
                     if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
                     {
                         var E = Entries.First(m => m.Name.ToLower() == Name.ToLower());
