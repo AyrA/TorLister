@@ -3,9 +3,9 @@ using System.Linq;
 
 namespace TorLister
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             Authority[] Auth;
             Directory Consensus;
@@ -35,6 +35,10 @@ namespace TorLister
                     Consensus = new Directory(Auth.Random().DownloadNodes());
                     Cache.Add("consensus", Tools.Serialize(Consensus), true);
                 }
+                else
+                {
+                    Console.Error.WriteLine("Consensus valid until {0} UTC", Consensus.ValidUntil);
+                }
             }
             else
             {
@@ -43,14 +47,46 @@ namespace TorLister
                 Cache.Add("consensus", Tools.Serialize(Consensus), true);
             }
 
-            Console.WriteLine("Flags Count:");
-            foreach (var S in Consensus.KnownFlags)
+            if (args.Length == 0)
             {
-                Console.WriteLine("{0}={1}", S, Consensus.TorNodes.Where(m => m.Services.Contains(S)).Distinct().Count());
+                args = new string[] { "/?" };
             }
+            if (args[0].ToLower() == "/flags")
+            {
+                Console.WriteLine(string.Join("\n", Consensus.KnownFlags));
+            }
+            else if (args[0].ToLower() == "/all")
+            {
+                Console.WriteLine(string.Join("\n", Consensus.TorNodes.Select(m => m.IP.ToString())));
+            }
+            else if (args[0].ToLower() == "/flag" && args.Length > 1)
+            {
 
+                var UserFlags = args[1].Split(',').Select(m => m.Trim().ToLower()).ToArray();
+                var SystemFlags = Consensus.KnownFlags.Select(m => m.ToLower()).ToArray();
+                if (UserFlags.All(m => SystemFlags.Contains(m)))
+                {
+                    foreach (var Node in Consensus.TorNodes)
+                    {
+                        if (Node.Services.Any(m => UserFlags.Contains(m.ToLower())))
+                        {
+                            Console.Error.WriteLine(Node.IP);
+                        }
+                    }
+                }
+                else
+                {
+                    Console.Error.WriteLine("Invalid Flag specified");
+                }
+            }
+            else
+            {
+                Console.Error.WriteLine("TorLister /all | /flags | /flag flag[,...]");
+            }
+#if DEBUG
             Console.WriteLine("#END");
             Console.ReadKey(true);
+#endif
         }
     }
 }
