@@ -1,5 +1,7 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 
 namespace TorLister
@@ -55,6 +57,36 @@ namespace TorLister
                 Addr != IPAddress.Any &&
                 //IP is IPv4
                 Addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
+        }
+
+        /// <summary>
+        /// Deserializes a Byte Array into a <see cref="SerializableAttribute"/> marked Object
+        /// </summary>
+        /// <typeparam name="T">Object to Deserialize</typeparam>
+        /// <param name="Data">Data to Deserialize</param>
+        /// <returns>Deserialized Object</returns>
+        public static T Deserialize<T>(byte[] Data)
+        {
+            var BF = new BinaryFormatter();
+            using (var MS = new MemoryStream(Data, false))
+            {
+                return (T)BF.Deserialize(MS);
+            }
+        }
+
+        /// <summary>
+        /// Serializes <see cref="SerializableAttribute"/> marked objects into byte arrays
+        /// </summary>
+        /// <param name="Data">Object to Serialize</param>
+        /// <returns>Serialized Object</returns>
+        public static byte[] Serialize(object Data)
+        {
+            var BF = new BinaryFormatter();
+            using (var MS = new MemoryStream())
+            {
+                BF.Serialize(MS, Data);
+                return MS.ToArray();
+            }
         }
 
         /// <summary>
