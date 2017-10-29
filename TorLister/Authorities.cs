@@ -15,13 +15,6 @@ namespace TorLister
         {
             List<Authority> Ret = new List<Authority>();
 
-            var Entry = Cache.Get("tor-source", TimeSpan.FromDays(1));
-
-            if (Entry != null)
-            {
-                return Tools.Deserialize<Authority[]>(Entry.Data);
-            }
-
             using (var WC = new WebClient())
             {
                 string Lines;
@@ -62,9 +55,7 @@ namespace TorLister
                     //remove more whitespace
                     Parts[i] = Parts[i].Trim();
                 }
-                var Authorities = Parts.Select(m => new Authority(m)).ToArray();
-                Cache.Add("tor-source", Tools.Serialize(Authorities), true);
-                return Authorities;
+                return Parts.Select(m => new Authority(m)).ToArray();
             }
         }
 
