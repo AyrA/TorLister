@@ -86,17 +86,20 @@ namespace TorLister
         {
             lock (locker)
             {
-                if (Name == null)
+                if (Entries != null && Entries.Length > 0)
                 {
-                    Name = "";
-                }
-                if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
-                {
-                    Dirty = true;
-                    Entries = Entries.Where(m => m.Name.ToLower() != Name.ToLower()).ToArray();
-                    if (Write)
+                    if (Name == null)
                     {
-                        SaveCache();
+                        Name = "";
+                    }
+                    if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
+                    {
+                        Dirty = true;
+                        Entries = Entries.Where(m => m.Name.ToLower() != Name.ToLower()).ToArray();
+                        if (Write)
+                        {
+                            SaveCache();
+                        }
                     }
                 }
             }
