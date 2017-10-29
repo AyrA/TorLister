@@ -79,6 +79,12 @@ namespace TorLister
             return !string.IsNullOrEmpty(Port) && ushort.TryParse(Port, out p);
         }
 
+        /// <summary>
+        /// Decompresses zlib compressed Input to Output
+        /// </summary>
+        /// <param name="Input">ZLib Input Stream</param>
+        /// <param name="Output">Output Stream</param>
+        /// <returns>Number of bytes written to Output</returns>
         public static long Decompress(zlib.ZInputStream Input, Stream Output)
         {
             int Readed = 0;
