@@ -11,6 +11,7 @@ namespace TorLister
     /// <summary>
     /// Represents a TOR Authority
     /// </summary>
+    [Serializable]
     public class Authority
     {
         /// <summary>
@@ -153,26 +154,15 @@ namespace TorLister
         /// <returns>Node File</returns>
         public async Task<string> DownloadNodesAsync()
         {
-#if DEBUG
-            if (File.Exists("consensus.z"))
-            {
-                Console.Error.WriteLine("Getting consensus from cache...");
-                return Decompress(File.ReadAllBytes("consensus.z"));
-            }
-#endif
             Validate(true);
+
             if (IPv6Endpoint != null)
             {
                 using (var WC = new WebClient())
                 {
                     try
                     {
-#if DEBUG
-                        await WC.DownloadFileTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}", "consensus.z");
-                        return Decompress(File.ReadAllBytes("consensus.z"));
-#else
                         return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
-#endif
                     }
                     catch
                     {
@@ -184,12 +174,7 @@ namespace TorLister
             {
                 using (var WC = new WebClient())
                 {
-#if DEBUG
-                    await WC.DownloadFileTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}", "consensus.z");
-                    return Decompress(File.ReadAllBytes("consensus.z"));
-#else
                     return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
-#endif
                 }
             }
             throw new Exception("Can't download from either IPv4 or IPv6");
@@ -253,6 +238,11 @@ namespace TorLister
                 !string.IsNullOrEmpty(Key);
         }
 
+        /// <summary>
+        /// Decompresses zlib compressed String Data
+        /// </summary>
+        /// <param name="Data">Data</param>
+        /// <returns>Decompressed String</returns>
         private string Decompress(byte[] Data)
         {
             using (var IN = new MemoryStream(Data, false))

@@ -6,6 +6,7 @@ using System.Text;
 
 namespace TorLister
 {
+    [Serializable]
     public class Directory
     {
         /// <summary>

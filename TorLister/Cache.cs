@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace TorLister
 {
@@ -40,10 +38,17 @@ namespace TorLister
         }
 
         /// <summary>
+        /// Gets if the Data in Memory has been modified and needs to be written do Disk
+        /// </summary>
+        public static bool Dirty
+        { get; private set; }
+
+        /// <summary>
         /// Loads the Cache
         /// </summary>
         static Cache()
         {
+            Dirty = false;
             ReloadCache();
         }
 
@@ -85,10 +90,14 @@ namespace TorLister
                 {
                     Name = "";
                 }
-                Entries = Entries.Where(m => m.Name.ToLower() != Name.ToLower()).ToArray();
-                if (Write)
+                if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
                 {
-                    SaveCache();
+                    Dirty = true;
+                    Entries = Entries.Where(m => m.Name.ToLower() != Name.ToLower()).ToArray();
+                    if (Write)
+                    {
+                        SaveCache();
+                    }
                 }
             }
         }
@@ -132,7 +141,7 @@ namespace TorLister
                             Data = Data
                         }}).ToArray();
                     }
-
+                    Dirty = true;
                     if (Write)
                     {
                         SaveCache();
@@ -148,6 +157,7 @@ namespace TorLister
         {
             lock (locker)
             {
+                Dirty = false;
                 Entries = null;
                 if (File.Exists(CACHEFILE))
                 {
@@ -224,6 +234,7 @@ namespace TorLister
                         }
                     }
                 }
+                Dirty = false;
             }
         }
     }

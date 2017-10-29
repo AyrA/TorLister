@@ -7,9 +7,36 @@ namespace TorLister
     {
         static void Main(string[] args)
         {
-            var Auth = Authorities.GetAuthorities();
-            
-            var Consensus = new Directory(Auth.Random().DownloadNodes());
+            Authority[] Auth;
+            Directory Consensus;
+
+            var CacheEntry = Cache.Get("authorities", TimeSpan.FromDays(1));
+
+            if (CacheEntry != null)
+            {
+                Auth = Tools.Deserialize<Authority[]>(CacheEntry.Data);
+            }
+            else
+            {
+                Auth = Authorities.GetAuthorities();
+                Cache.Add("authorities", Tools.Serialize(Auth), true);
+            }
+
+            CacheEntry = Cache.Get("consensus");
+            if (CacheEntry != null)
+            {
+                Consensus = Tools.Deserialize<Directory>(CacheEntry.Data);
+                if (Consensus.ValidUntil < DateTime.UtcNow)
+                {
+                    Consensus = new Directory(Auth.Random().DownloadNodes());
+                    Cache.Add("consensus", Tools.Serialize(Consensus), true);
+                }
+            }
+            else
+            {
+                Consensus = new Directory(Auth.Random().DownloadNodes());
+                Cache.Add("consensus", Tools.Serialize(Consensus), true);
+            }
 
             Console.WriteLine("Flags Count:");
             foreach (var S in Consensus.KnownFlags)

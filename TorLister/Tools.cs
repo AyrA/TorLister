@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
