@@ -52,6 +52,7 @@
     <Compile Include="Directory.cs" />
     <Compile Include="DirectoryEntry.cs" />
     <Compile Include="DirectorySignature.cs" />
+    <Compile Include="IpComparer.cs" />
     <Compile Include="Linq.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
