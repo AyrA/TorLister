@@ -14,10 +14,12 @@ namespace TorLister
 
             if (CacheEntry != null)
             {
+                Console.Error.WriteLine("Taking auth from cache");
                 Auth = Tools.Deserialize<Authority[]>(CacheEntry.Data);
             }
             else
             {
+                Console.Error.WriteLine("Taking auth live");
                 Auth = Authorities.GetAuthorities();
                 Cache.Add("authorities", Tools.Serialize(Auth), true);
             }
@@ -25,15 +27,18 @@ namespace TorLister
             CacheEntry = Cache.Get("consensus");
             if (CacheEntry != null)
             {
+                Console.Error.WriteLine("Taking consensus from cache");
                 Consensus = Tools.Deserialize<Directory>(CacheEntry.Data);
                 if (Consensus.ValidUntil < DateTime.UtcNow)
                 {
+                    Console.Error.WriteLine("Consensus is outdated. Renewing from random Authority");
                     Consensus = new Directory(Auth.Random().DownloadNodes());
                     Cache.Add("consensus", Tools.Serialize(Consensus), true);
                 }
             }
             else
             {
+                Console.Error.WriteLine("Taking consensus from random Authority");
                 Consensus = new Directory(Auth.Random().DownloadNodes());
                 Cache.Add("consensus", Tools.Serialize(Consensus), true);
             }
