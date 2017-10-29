@@ -57,20 +57,24 @@ namespace TorLister
             }
             else if (args[0].ToLower() == "/all")
             {
-                Console.WriteLine(string.Join("\n", Consensus.TorNodes.Select(m => m.IP.ToString())));
+                var Details = args.Contains("/details");
+                foreach (var Node in Consensus.TorNodes.OrderBy(m => m.IP, IpComparer.Instance))
+                {
+                    WriteNode(Node, Details);
+                }
             }
             else if (args[0].ToLower() == "/flag" && args.Length > 1)
             {
-
+                var Details = args.Contains("/details");
                 var UserFlags = args[1].Split(',').Select(m => m.Trim().ToLower()).ToArray();
                 var SystemFlags = Consensus.KnownFlags.Select(m => m.ToLower()).ToArray();
                 if (UserFlags.All(m => SystemFlags.Contains(m)))
                 {
-                    foreach (var Node in Consensus.TorNodes)
+                    foreach (var Node in Consensus.TorNodes.OrderBy(m => m.IP, IpComparer.Instance))
                     {
                         if (Node.Services.Any(m => UserFlags.Contains(m.ToLower())))
                         {
-                            Console.Error.WriteLine(Node.IP);
+                            WriteNode(Node, Details);
                         }
                     }
                 }
@@ -87,6 +91,24 @@ namespace TorLister
             Console.WriteLine("#END");
             Console.ReadKey(true);
 #endif
+        }
+
+        static void WriteNode(TorNode Node, bool Details = false)
+        {
+            if (Details)
+            {
+                Console.WriteLine(string.Join("\t", new string[] {
+                    Node.Name,
+                    Node.IP.ToString(),
+                    Node.OrPort.ToString(),
+                    Node.OnlineSince.ToString("s"),
+                    string.Join(",",Node.Services) })
+                );
+            }
+            else
+            {
+                Console.WriteLine(Node.IP);
+            }
         }
     }
 }
