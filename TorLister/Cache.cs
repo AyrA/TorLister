@@ -74,7 +74,7 @@ namespace TorLister
             {
                 Name = "";
             }
-            return Entries.FirstOrDefault(m => m.Name.ToLower() == Name.ToLower() && DateTime.UtcNow.Subtract(m.Created) < MaxAge);
+            return Entries == null ? null : Entries.FirstOrDefault(m => m.Name.ToLower() == Name.ToLower() && DateTime.UtcNow.Subtract(m.Created) < MaxAge);
         }
 
         /// <summary>
