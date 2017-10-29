@@ -5,6 +5,7 @@ using System.Net;
 
 namespace TorLister
 {
+    [Serializable]
     public struct TorNode
     {
         public string Name;
