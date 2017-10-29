@@ -4,6 +4,10 @@ using System.Linq;
 
 namespace TorLister
 {
+    /// <summary>
+    /// Represents a Version String made up of multiple Integers
+    /// </summary>
+    [Serializable]
     public class Version
     {
         /// <summary>

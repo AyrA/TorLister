@@ -1,5 +1,8 @@
-﻿namespace TorLister
+﻿using System;
+
+namespace TorLister
 {
+    [Serializable]
     public struct DirectorySignature
     {
         public string SignatureType;

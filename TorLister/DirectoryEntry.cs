@@ -4,6 +4,7 @@ using System.Net;
 
 namespace TorLister
 {
+    [Serializable]
     public struct DirectoryEntry
     {
         public string Name;
