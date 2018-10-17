@@ -57,10 +57,10 @@ namespace TorLister
             {
                 Console.WriteLine(string.Join("\n", Consensus.KnownFlags));
             }
-            else if(args[0].ToLower()=="/dump")
+            else if (args[0].ToLower() == "/dump")
             {
                 var Ret = new Dictionary<string, string[]>();
-                foreach(var Flag in Consensus.KnownFlags)
+                foreach (var Flag in Consensus.KnownFlags)
                 {
                     Ret[Flag] = Consensus.TorNodes
                         .Where(m => m.Services.Contains(Flag))
