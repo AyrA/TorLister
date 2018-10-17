@@ -34,7 +34,8 @@ namespace TorLister
                 return Elements.FirstOrDefault();
             }
             //Chose randomly
-            return Elements.Skip(R.Next(Count - 1)).First();
+            //Note: Don't use (Count-1) because otherwise the last element will never be selected
+            return Elements.Skip(R.Next(Count)).First();
         }
     }
 }
