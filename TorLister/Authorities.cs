@@ -8,7 +8,7 @@ namespace TorLister
 {
     public static class Authorities
     {
-        public const string TOR_SOURCE = "https://gitweb.torproject.org/tor.git/plain/src/or/config.c";
+        public const string TOR_SOURCE = "https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc";
 
         public static async Task<Authority[]> GetAuthoritiesAsync()
         {
@@ -27,10 +27,6 @@ namespace TorLister
                     return null;
                 }
 
-                //Trim the source file to the part, that contains the authorities
-                Lines = Lines.Substring(Lines.IndexOf("/** List of default directory authorities */"));
-                Lines = Lines.Substring(Lines.IndexOf('"'));
-                Lines = Lines.Substring(0, Lines.IndexOf("NULL") - 1).Trim(' ', '\r', '\n', ',', '\t');
                 //remove all inline comments from the source
                 while (Lines.Contains("/*"))
                 {
@@ -42,9 +38,9 @@ namespace TorLister
                 for (int i = 0; i < Parts.Length; i++)
                 {
                     //remove unneeded chars
-                    foreach (char c in "\"\r\n")
+                    foreach (string s in new string[] { "\"", "\r", "\n" })
                     {
-                        Parts[i] = Parts[i].Replace(c.ToString(), "");
+                        Parts[i] = Parts[i].Replace(s, "");
                     }
                     //remove unneeded whitespace
                     while (Parts[i].Contains("  "))
@@ -54,7 +50,7 @@ namespace TorLister
                     //remove more whitespace
                     Parts[i] = Parts[i].Trim();
                 }
-                return Parts.Select(m => new Authority(m)).ToArray();
+                return Parts.Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => new Authority(m)).ToArray();
             }
         }
 
