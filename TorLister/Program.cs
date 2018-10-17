@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace TorLister
@@ -55,6 +57,19 @@ namespace TorLister
             {
                 Console.WriteLine(string.Join("\n", Consensus.KnownFlags));
             }
+            else if(args[0].ToLower()=="/dump")
+            {
+                var Ret = new Dictionary<string, string[]>();
+                foreach(var Flag in Consensus.KnownFlags)
+                {
+                    Ret[Flag] = Consensus.TorNodes
+                        .Where(m => m.Services.Contains(Flag))
+                        .OrderBy(m => m.IP, IpComparer.Instance)
+                        .Select(m => m.IP.ToString())
+                        .ToArray();
+                }
+                Console.WriteLine(JsonConvert.SerializeObject(Ret));
+            }
             else if (args[0].ToLower() == "/all")
             {
                 var Details = args.Contains("/details");
@@ -88,7 +103,7 @@ namespace TorLister
                 Console.Error.WriteLine("TorLister /all | /flags | /flag flag[,...]");
             }
 #if DEBUG
-            Console.WriteLine("#END");
+            Console.Error.WriteLine("#END");
             Console.ReadKey(true);
 #endif
         }
