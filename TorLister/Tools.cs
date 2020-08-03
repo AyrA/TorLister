@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
@@ -10,6 +11,23 @@ namespace TorLister
     /// </summary>
     public static class Tools
     {
+        private static string _AppPath;
+
+        public static string AppPath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_AppPath))
+                {
+                    using (var Proc = Process.GetCurrentProcess())
+                    {
+                        _AppPath = Path.GetDirectoryName(Proc.MainModule.FileName);
+                    }
+                }
+                return _AppPath;
+            }
+        }
+
         /// <summary>
         /// Checks if the given string is a SHA1 hash
         /// </summary>

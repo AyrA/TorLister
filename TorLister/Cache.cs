@@ -14,7 +14,21 @@ namespace TorLister
         /// <summary>
         /// Name of Cache File
         /// </summary>
-        public const string CACHEFILE = "cache.bin";
+        private const string CACHEFILE = "cache.bin";
+
+        private static string _cachePath;
+
+        public static string CachePath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_cachePath))
+                {
+                    _cachePath = Path.Combine(Tools.AppPath, CACHEFILE);
+                }
+                return _cachePath;
+            }
+        }
 
         /// <summary>
         /// Provides a global Cache Lock
@@ -165,11 +179,11 @@ namespace TorLister
             {
                 Dirty = false;
                 Entries = null;
-                if (File.Exists(CACHEFILE))
+                if (File.Exists(CachePath))
                 {
                     try
                     {
-                        using (var FS = File.OpenRead(CACHEFILE))
+                        using (var FS = File.OpenRead(CachePath))
                         {
                             using (var Decomp = new GZipStream(FS, CompressionMode.Decompress))
                             {
@@ -207,14 +221,14 @@ namespace TorLister
             {
                 if (Entries == null || Entries.Length == 0)
                 {
-                    if (File.Exists(CACHEFILE))
+                    if (File.Exists(CachePath))
                     {
-                        File.Delete(CACHEFILE);
+                        File.Delete(CachePath);
                     }
                 }
                 else
                 {
-                    using (var FS = File.Create(CACHEFILE))
+                    using (var FS = File.Create(CachePath))
                     {
                         using (var Comp = new GZipStream(FS, CompressionLevel.Optimal))
                         {

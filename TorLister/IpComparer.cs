@@ -25,7 +25,7 @@ namespace TorLister
         static extern int memcmp(byte[] b1, byte[] b2, long count);
 
         /// <summary>
-        /// Instance if this Class
+        /// Instance of this Class
         /// </summary>
         public static readonly IpComparer Instance = new IpComparer();
 
@@ -46,24 +46,13 @@ namespace TorLister
                 }
                 if (SecondAddress.AddressFamily == AddressFamily.InterNetwork)
                 {
-                    SecondAddress = FirstAddress.MapToIPv6();
+                    SecondAddress = SecondAddress.MapToIPv6();
                 }
             }
             var bx = FirstAddress.GetAddressBytes();
             var by = SecondAddress.GetAddressBytes();
 
             return memcmp(bx,by,bx.LongLength);
-
-            /*
-            for (var i = 0; i < bx.Length; i++)
-            {
-                if (bx[i] != by[i])
-                {
-                    return bx[i] - by[i];
-                }
-            }
-            return 0;
-            //*/
         }
     }
 }
