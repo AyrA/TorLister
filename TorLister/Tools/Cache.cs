@@ -1,10 +1,7 @@
-﻿using System;
-using System.IO;
-using System.IO.Compression;
-using System.Linq;
+﻿using System.IO.Compression;
 using System.Text;
 
-namespace TorLister
+namespace TorLister.Tools
 {
     /// <summary>
     /// Provides a Thread safe and case insensitive file based Cache
@@ -16,38 +13,28 @@ namespace TorLister
         /// </summary>
         private const string CACHEFILE = "cache.bin";
 
-        private static string _cachePath;
+        private static readonly string _cachePath = Path.Combine(Utils.AppPath, CACHEFILE);
 
-        public static string CachePath
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_cachePath))
-                {
-                    _cachePath = Path.Combine(Tools.AppPath, CACHEFILE);
-                }
-                return _cachePath;
-            }
-        }
+        public static string CachePath => _cachePath;
 
         /// <summary>
         /// Provides a global Cache Lock
         /// </summary>
-        private static object locker = new object();
+        private static readonly object locker = new();
 
         /// <summary>
         /// Cache Entries directly
         /// </summary>
-        private static CacheEntry[] Entries;
+        private static CacheEntry[]? Entries;
 
         /// <summary>
         /// Gets all cache Entry Names
         /// </summary>
-        public static string[] Names
+        public static string[]? Names
         {
             get
             {
-                return Entries == null ? null : Entries.Select(m => m.Name).ToArray();
+                return Entries?.Select(m => m.Name ?? "").ToArray();
             }
         }
 
@@ -71,7 +58,7 @@ namespace TorLister
         /// </summary>
         /// <param name="Name">Entry Name</param>
         /// <returns>Cache Entry</returns>
-        public static CacheEntry Get(string Name)
+        public static CacheEntry? Get(string Name)
         {
             return Get(Name, TimeSpan.MaxValue);
         }
@@ -82,13 +69,10 @@ namespace TorLister
         /// <param name="Name">Entry Name</param>
         /// <param name="MaxAge">Maximum permitted Age</param>
         /// <returns>Cache Entry</returns>
-        public static CacheEntry Get(string Name, TimeSpan MaxAge)
+        public static CacheEntry? Get(string Name, TimeSpan MaxAge)
         {
-            if (Name == null)
-            {
-                Name = "";
-            }
-            return Entries == null ? null : Entries.FirstOrDefault(m => m.Name.ToLower() == Name.ToLower() && DateTime.UtcNow.Subtract(m.Created) < MaxAge);
+            Name ??= "";
+            return Entries?.FirstOrDefault(m => m.Name.Equals(Name, StringComparison.InvariantCultureIgnoreCase) && DateTime.UtcNow.Subtract(m.Created) < MaxAge);
         }
 
         /// <summary>
@@ -102,14 +86,11 @@ namespace TorLister
             {
                 if (Entries != null && Entries.Length > 0)
                 {
-                    if (Name == null)
-                    {
-                        Name = "";
-                    }
-                    if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
+                    Name ??= "";
+                    if (Entries.Any(m => m.Name.Equals(Name, StringComparison.InvariantCultureIgnoreCase)))
                     {
                         Dirty = true;
-                        Entries = Entries.Where(m => m.Name.ToLower() != Name.ToLower()).ToArray();
+                        Entries = Entries.Where(m => !m.Name.Equals(Name, StringComparison.InvariantCultureIgnoreCase)).ToArray();
                         if (Write)
                         {
                             SaveCache();
@@ -136,17 +117,11 @@ namespace TorLister
                 }
                 else
                 {
-                    if (Name == null)
+                    Name ??= "";
+                    Entries ??= [];
+                    if (Entries.Any(m => m.Name.Equals(Name, StringComparison.InvariantCultureIgnoreCase)))
                     {
-                        Name = "";
-                    }
-                    if (Entries == null)
-                    {
-                        Entries = new CacheEntry[0];
-                    }
-                    if (Entries.Count(m => m.Name.ToLower() == Name.ToLower()) > 0)
-                    {
-                        var E = Entries.First(m => m.Name.ToLower() == Name.ToLower());
+                        var E = Entries.First(m => m.Name.Equals(Name, StringComparison.InvariantCultureIgnoreCase));
                         var I = Array.IndexOf(Entries, E);
                         E.Created = DateTime.UtcNow;
                         E.Data = Data;
@@ -154,12 +129,11 @@ namespace TorLister
                     }
                     else
                     {
-                        Entries = Entries.Concat(new CacheEntry[] { new CacheEntry()
-                        {
-                            Name = Name,
-                            Created = DateTime.UtcNow,
-                            Data = Data
-                        }}).ToArray();
+                        Entries =
+                        [
+                            .. Entries,
+                            new CacheEntry(Name, DateTime.UtcNow, Data)
+                        ];
                     }
                     Dirty = true;
                     if (Write)
@@ -183,24 +157,16 @@ namespace TorLister
                 {
                     try
                     {
-                        using (var FS = File.OpenRead(CachePath))
+                        using var FS = File.OpenRead(CachePath);
+                        using var Decomp = new GZipStream(FS, CompressionMode.Decompress);
+                        using var BR = new BinaryReader(Decomp);
+                        Entries = new CacheEntry[BR.ReadInt32()];
+                        for (var i = 0; i < Entries.Length; i++)
                         {
-                            using (var Decomp = new GZipStream(FS, CompressionMode.Decompress))
-                            {
-                                using (var BR = new BinaryReader(Decomp))
-                                {
-                                    Entries = new CacheEntry[BR.ReadInt32()];
-                                    for (var i = 0; i < Entries.Length; i++)
-                                    {
-                                        Entries[i] = new CacheEntry()
-                                        {
-                                            Name = Encoding.UTF8.GetString(BR.ReadBytes(BR.ReadInt32())),
-                                            Created = new DateTime(BR.ReadInt64(), DateTimeKind.Utc),
-                                            Data = BR.ReadBytes(BR.ReadInt32())
-                                        };
-                                    }
-                                }
-                            }
+                            Entries[i] = new CacheEntry(
+                                Encoding.UTF8.GetString(BR.ReadBytes(BR.ReadInt32())),
+                                new DateTime(BR.ReadInt64(), DateTimeKind.Utc),
+                                BR.ReadBytes(BR.ReadInt32()));
                         }
 
                     }
@@ -228,30 +194,24 @@ namespace TorLister
                 }
                 else
                 {
-                    using (var FS = File.Create(CachePath))
+                    using var FS = File.Create(CachePath);
+                    using var Comp = new GZipStream(FS, CompressionLevel.Optimal);
+                    using var BW = new BinaryWriter(Comp);
+                    BW.Write(Entries.Length);
+                    foreach (var E in Entries)
                     {
-                        using (var Comp = new GZipStream(FS, CompressionLevel.Optimal))
+                        if (string.IsNullOrEmpty(E.Name))
                         {
-                            using (var BW = new BinaryWriter(Comp))
-                            {
-                                BW.Write(Entries.Length);
-                                foreach (var E in Entries)
-                                {
-                                    if (string.IsNullOrEmpty(E.Name))
-                                    {
-                                        BW.Write(0);
-                                    }
-                                    else
-                                    {
-                                        BW.Write(Encoding.UTF8.GetByteCount(E.Name));
-                                        BW.Write(Encoding.UTF8.GetBytes(E.Name));
-                                    }
-                                    BW.Write(E.Created.ToUniversalTime().Ticks);
-                                    BW.Write(E.Data.Length);
-                                    BW.Write(E.Data);
-                                }
-                            }
+                            BW.Write(0);
                         }
+                        else
+                        {
+                            BW.Write(Encoding.UTF8.GetByteCount(E.Name));
+                            BW.Write(Encoding.UTF8.GetBytes(E.Name));
+                        }
+                        BW.Write(E.Created.ToUniversalTime().Ticks);
+                        BW.Write(E.Data.Length);
+                        BW.Write(E.Data);
                     }
                 }
                 Dirty = false;
@@ -262,10 +222,10 @@ namespace TorLister
     /// <summary>
     /// Represents a Cache Entry
     /// </summary>
-    public class CacheEntry
+    public class CacheEntry(string name, DateTime created, byte[] data)
     {
-        public string Name;
-        public DateTime Created;
-        public byte[] Data;
+        public string Name = name;
+        public DateTime Created = created;
+        public byte[] Data = data;
     }
 }

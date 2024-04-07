@@ -1,18 +1,17 @@
-﻿using System;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
+using TorLister.Tools;
 
-namespace TorLister
+namespace TorLister.Tor
 {
     [Serializable]
     public struct DirectoryEntry
     {
-        public string Name;
-        public string SHA1;
-        public IPEndPoint OnionEP;
-        public IPEndPoint HttpEP;
-        public string Contact;
-        public string Digest;
+        public string? Name;
+        public string? SHA1;
+        public IPEndPoint? OnionEP;
+        public IPEndPoint? HttpEP;
+        public string? Contact;
+        public string? Digest;
 
         public DirectoryEntry(string SourceLine)
         {
@@ -26,7 +25,7 @@ namespace TorLister
             {
                 Parts = Parts.Skip(1).ToArray();
                 Name = Parts[0];
-                if (Tools.IsSHA1(Parts[1]))
+                if (Utils.IsSHA1(Parts[1]))
                 {
                     SHA1 = Parts[1].ToUpper();
                 }
@@ -39,7 +38,7 @@ namespace TorLister
 
                 try
                 {
-                    HttpEP = Tools.ParseEP($"{Parts[2]}:{Parts[4]}");
+                    HttpEP = Utils.ParseEP($"{Parts[2]}:{Parts[4]}");
                 }
                 catch
                 {
@@ -47,7 +46,7 @@ namespace TorLister
                 }
                 try
                 {
-                    OnionEP = Tools.ParseEP($"{Parts[3]}:{Parts[5]}");
+                    OnionEP = Utils.ParseEP($"{Parts[3]}:{Parts[5]}");
                 }
                 catch
                 {
@@ -58,8 +57,6 @@ namespace TorLister
             {
                 throw new ArgumentException("Invalid Source Line. Needs 7 Parts");
             }
-
-
             Contact = null;
             Digest = null;
         }

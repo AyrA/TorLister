@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "TorLister": {
+      "commandName": "Project",
+      "commandLineArgs": "/dump",
+      "hotReloadEnabled": false
+    }
+  }
+}

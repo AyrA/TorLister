@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TorLister
+namespace TorLister.Tor
 {
     [Serializable]
     public struct RandValue

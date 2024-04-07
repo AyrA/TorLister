@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using TorLister.Tools;
 
-namespace TorLister
+namespace TorLister.Tor
 {
     /// <summary>
     /// Represents a TOR Authority
     /// </summary>
     [Serializable]
-    public class Authority
+    public partial class Authority
     {
         /// <summary>
         /// HTTP Path to get all Nodes
@@ -27,7 +25,7 @@ namespace TorLister
         /// <summary>
         /// Gets or Sets the Authority Name
         /// </summary>
-        public string Name
+        public string? Name
         { get; set; }
 
         /// <summary>
@@ -39,7 +37,7 @@ namespace TorLister
         /// <summary>
         /// Gets or Sets the V3 Identity SHA1 Hash
         /// </summary>
-        public string Identity
+        public string? Identity
         { get; set; }
 
         /// <summary>
@@ -51,19 +49,19 @@ namespace TorLister
         /// <summary>
         /// Gets or Sets the IPv4 Endpoint for HTTP Connections
         /// </summary>
-        public IPEndPoint IPv4Endpoint
+        public IPEndPoint? IPv4Endpoint
         { get; set; }
 
         /// <summary>
         /// Gets or Sets the IPv6 Endpoint for HTTP Connections
         /// </summary>
-        public IPEndPoint IPv6Endpoint
+        public IPEndPoint? IPv6Endpoint
         { get; set; }
 
         /// <summary>
         /// Gets or Sets the SHA1 Key
         /// </summary>
-        public string Key
+        public string? Key
         { get; set; }
 
         /// <summary>
@@ -80,7 +78,7 @@ namespace TorLister
         public Authority(string ConfigLine)
         {
             var Segments = ConfigLine.Split(' ');
-            List<string> KeySegments = new List<string>();
+            List<string> KeySegments = [];
 
             foreach (var Segment in Segments)
             {
@@ -89,20 +87,20 @@ namespace TorLister
                 {
                     Name = Segment;
                 }
-                else if (Segment.Contains("="))
+                else if (Segment.Contains('='))
                 {
-                    var Key = Segment.Substring(0, Segment.IndexOf('='));
-                    var Value = Segment.Substring(Key.Length + 1);
+                    var Key = Segment[..Segment.IndexOf('=')];
+                    var Value = Segment[(Key.Length + 1)..];
                     switch (Key.ToLower())
                     {
                         case "orport":
-                            if (Tools.IsPort(Value))
+                            if (Utils.IsPort(Value))
                             {
                                 Port = int.Parse(Value);
                             }
                             break;
                         case "v3ident":
-                            if (Tools.IsSHA1(Value))
+                            if (Utils.IsSHA1(Value))
                             {
                                 Identity = Value.ToUpper();
                             }
@@ -110,7 +108,7 @@ namespace TorLister
                         case "ipv6":
                             try
                             {
-                                IPv6Endpoint = Tools.ParseEP(Value);
+                                IPv6Endpoint = Utils.ParseEP(Value);
 
                             }
                             catch (Exception ex)
@@ -128,22 +126,17 @@ namespace TorLister
                 {
                     Bridge = true;
                 }
-                else if (Tools.IsIpV4Entry(Segment))
+                else if (Utils.IsIpV4Entry(Segment))
                 {
-                    IPv4Endpoint = Tools.ParseEP(Segment);
+                    IPv4Endpoint = Utils.ParseEP(Segment);
                 }
-                else if (Tools.IsKeyPart(Segment))
+                else if (Utils.IsKeyPart(Segment))
                 {
                     KeySegments.Add(Segment);
                 }
-                else
-                {
-#if DEBUG
-                    Console.Error.WriteLine("Unknown Authority Segment: {0}", Segment);
-#endif
-                }
             }
             Key = string.Join(" ", KeySegments).ToUpper();
+            Key = WhitespaceFilter().Replace(Key, "");
             //Throw Exception if invalid ID
             Validate(true);
         }
@@ -158,24 +151,20 @@ namespace TorLister
 
             if (IPv6Endpoint != null)
             {
-                using (var WC = new WebClient())
+                using var WC = new HttpClient();
+                try
                 {
-                    try
-                    {
-                        return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
-                    }
-                    catch
-                    {
-                        //Unable to Download, try IPv4
-                    }
+                    return Decompress(await WC.GetByteArrayAsync($"http://{IPv6Endpoint}{TOR_CONSENSUS}"));
+                }
+                catch
+                {
+                    //Unable to Download, try IPv4
                 }
             }
             if (IPv4Endpoint != null)
             {
-                using (var WC = new WebClient())
-                {
-                    return Decompress(await WC.DownloadDataTaskAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
-                }
+                using var WC = new HttpClient();
+                return Decompress(await WC.GetByteArrayAsync($"http://{IPv4Endpoint}{TOR_CONSENSUS}"));
             }
             throw new Exception("Can't download from either IPv4 or IPv6");
         }
@@ -206,6 +195,7 @@ namespace TorLister
         /// </summary>
         /// <param name="Throw">Throw first exception on validation error</param>
         /// <returns>true if valid</returns>
+        [MemberNotNullWhen(true, nameof(Name), nameof(Key))]
         public bool Validate(bool Throw = false)
         {
             if (Throw)
@@ -226,7 +216,7 @@ namespace TorLister
                 {
                     throw new Exception("Key is not defined");
                 }
-                if (Key.Split(' ').Length != 10 || Key.Split(' ').Any(m => !Tools.IsKeyPart(m)))
+                if (Key.Length != 40 || Key.Split(' ').Any(m => !Utils.IsSHA1(m)))
                 {
                     throw new Exception("Key is invalid. See inner exception for Details", new FormatException("Expected format: 10 groups of 4 hex digits separated by spaces"));
                 }
@@ -243,34 +233,28 @@ namespace TorLister
         /// </summary>
         /// <param name="Data">Data</param>
         /// <returns>Decompressed String</returns>
-        private string Decompress(byte[] Data)
+        private static string Decompress(byte[] Data)
         {
-            using (var IN = new MemoryStream(Data, false))
-            {
-                using (var OUT = new MemoryStream())
-                {
-                    using (var Comp = new zlib.ZInputStream(IN))
-                    {
-                        Tools.Decompress(Comp, OUT);
-                    }
-                    return Encoding.UTF8.GetString(OUT.ToArray());
-                }
-            }
+            using var IN = new MemoryStream(Data, false);
+            using var OUT = new MemoryStream();
+            using var Comp = new System.IO.Compression.ZLibStream(IN, System.IO.Compression.CompressionMode.Decompress);
+            Comp.CopyTo(OUT);
+            return Encoding.UTF8.GetString(OUT.ToArray());
         }
 
         /// <summary>
-        /// Converts this Instance to an Authority Line
+        /// Converts this instance to an authority line
         /// </summary>
         /// <remarks>This is essentially serializing</remarks>
-        /// <returns>Authority Line</returns>
+        /// <returns>Authority line</returns>
         public override string ToString()
         {
-            Validate(true);
+            if (!Validate(true))
+            {
+                throw new InvalidOperationException("Validation failed");
+            }
 
-            List<string> Segments = new List<string>();
-
-            Segments.Add(Name);
-            Segments.Add($"orport={Port}");
+            List<string> Segments = [Name, $"orport={Port}"];
 
             if (Bridge)
             {
@@ -293,5 +277,8 @@ namespace TorLister
 
             return string.Join(" ", Segments);
         }
+
+        [GeneratedRegex(@"\s+")]
+        private static partial Regex WhitespaceFilter();
     }
 }

@@ -1,60 +1,47 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Net;
 
-namespace TorLister
+namespace TorLister.Tor
 {
     [Serializable]
     public struct TorNode
     {
-        public string Name;
-        public byte[] Hash;
-        public DateTime OnlineSince;
-        public IPAddress IP;
+        public string? Name;
+        public byte[]? Hash;
+        public DateTime OnlineSince = DateTime.MinValue;
+        public IPAddress? IP = IPAddress.Any;
         public ushort OrPort;
         public ushort HttpPort;
-        public string m;
-        public string[] Services;
-        public string TorVersion;
-        public Dictionary<string, Version> Protocols;
+        public string? m;
+        public string[] Services = [];
+        public string? TorVersion;
+        public Dictionary<string, ProtocolVersion> Protocols = [];
         public int Bandwidth;
 
         public TorNode(string FirstLine)
         {
-            Name = null;
-            Hash = null;
-            OnlineSince = DateTime.MinValue;
-            IP = IPAddress.Any;
-            OrPort = 0;
-            HttpPort = 0;
-            m = null;
-            Services = new string[0];
-            TorVersion = null;
-            Protocols = new Dictionary<string, Version>();
-            Bandwidth = 0;
             RelayLine(FirstLine);
         }
 
         public void SetLine(string Line)
         {
-            if (string.IsNullOrEmpty(Line) || !Line.Contains(" "))
+            if (string.IsNullOrEmpty(Line) || !Line.Contains(' '))
             {
                 throw new ArgumentException("Invalid Descriptor Line. Lacks a Code");
             }
-            switch (Line.Substring(0, Line.IndexOf(' ')))
+            switch (Line[..Line.IndexOf(' ')])
             {
                 case "r":
                     RelayLine(Line);
                     break;
                 case "m":
-                    m = Line.Substring(2);
+                    m = Line[2..];
                     break;
                 case "s":
                     Services = Line.Split(' ').Skip(1).ToArray();
                     break;
                 case "v":
-                    TorVersion = Line.Substring(2);
+                    TorVersion = Line[2..];
                     break;
                 case "pr":
                     ProtocolLine(Line);
@@ -77,7 +64,7 @@ namespace TorLister
             if (Segments.Length == 8)
             {
                 Name = Segments[1];
-                Hash = Convert.FromBase64String(Segments[2]+"=");
+                Hash = Convert.FromBase64String(Segments[2] + "=");
                 OnlineSince = DateTime.Parse($"{Segments[3]}T{Segments[4]}Z");
                 IP = IPAddress.Parse(Segments[5]);
                 OrPort = ushort.Parse(Segments[6]);
@@ -96,15 +83,22 @@ namespace TorLister
                 throw new ArgumentException("Invalid TOR Node Line. Should Start with 'pr' and a space");
             }
 
-            Protocols = new Dictionary<string, Version>();
-            foreach (string s in Line.Substring(3).Split(' '))
+            Protocols = [];
+            foreach (string s in Line[3..].Split(' '))
             {
-                if (s.Contains("="))
+                if (s.Contains('='))
                 {
                     var Segments = s.Split('=');
                     if (Segments.Length == 2)
                     {
-                        Protocols.Add(Segments[0], new Version(Segments[1]));
+                        try
+                        {
+                            Protocols.Add(Segments[0], new ProtocolVersion(Segments[1]));
+                        }
+                        catch
+                        {
+                            Protocols.Add(Segments[0], new ProtocolVersion());
+                        }
                     }
                 }
             }
@@ -117,17 +111,63 @@ namespace TorLister
             {
                 throw new ArgumentException("Invalid Bandwidth Line. Should Start with 'w' and a space");
             }
-            foreach (string s in Line.Substring(2).Split(' '))
+            foreach (string s in Line[2..].Split(' '))
             {
-                if (s.Contains("="))
+                if (s.Contains('='))
                 {
                     var Segments = s.Split('=');
                     if (Segments[0] == "Bandwidth")
                     {
-                        Bandwidth=int.Parse(Segments[1]);
+                        Bandwidth = int.Parse(Segments[1]);
                     }
                 }
             }
+        }
+    }
+
+    public class ProtocolVersion
+    {
+        public int[] Versions { get; set; }
+
+        public ProtocolVersion()
+        {
+            Versions = [];
+        }
+
+        public ProtocolVersion(string versionString)
+        {
+            List<int> v = [];
+            var parts = versionString.Split(',');
+            foreach (var part in parts)
+            {
+                if (string.IsNullOrWhiteSpace(part))
+                {
+                    continue;
+                }
+                try
+                {
+                    //Add range
+                    if (part.Contains('-'))
+                    {
+                        var range = part.Split('-');
+                        var from = int.Parse(range[0]);
+                        var to = int.Parse(range[1]);
+                        for (var i = from; i <= to; i++)
+                        {
+                            v.Add(i);
+                        }
+                    }
+                    else //Add single number
+                    {
+                        v.Add(int.Parse(part));
+                    }
+                }
+                catch
+                {
+                    Debug.Print($"Failed to parse {part} as version or version range");
+                }
+            }
+            Versions = [.. v.Distinct().Order()];
         }
     }
 }

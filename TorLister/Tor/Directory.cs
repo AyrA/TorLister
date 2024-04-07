@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Text;
 
-namespace TorLister
+namespace TorLister.Tor
 {
     [Serializable]
     public class Directory
@@ -14,7 +11,7 @@ namespace TorLister
         /// </summary>
         /// <remarks>This should always be "consensus"</remarks>
         public string VoteStatus
-        { get; private set; }
+        { get; private set; } = string.Empty;
 
         /// <summary>
         /// Gets the Consensus Method
@@ -47,91 +44,91 @@ namespace TorLister
         /// Gets the two voting Delay Values
         /// </summary>
         public int[] VotingDelays
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets all Supported Client Versions
         /// </summary>
         public string[] ClientVersions
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets all Supported Server Versions
         /// </summary>
         public string[] ServerVersions
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets all known Service Flags
         /// </summary>
         public string[] KnownFlags
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the Recommended Client Versions for Services
         /// </summary>
-        public Dictionary<string, Version> RecommendedClientVersions
-        { get; private set; }
+        public Dictionary<string, ProtocolVersion> RecommendedClientVersions
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the Recommended Relay Versions for Services
         /// </summary>
-        public Dictionary<string, Version> RecommendedRelayVersions
-        { get; private set; }
+        public Dictionary<string, ProtocolVersion> RecommendedRelayVersions
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the Required Client Versions for Services
         /// </summary>
-        public Dictionary<string, Version> RequiredClientVersions
-        { get; private set; }
+        public Dictionary<string, ProtocolVersion> RequiredClientVersions
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the Required Relay Versions for Services
         /// </summary>
-        public Dictionary<string, Version> RequiredRelayVersions
-        { get; private set; }
+        public Dictionary<string, ProtocolVersion> RequiredRelayVersions
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the Parameters
         /// </summary>
         public Dictionary<string, int> Params
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets the previous shared Random Value
         /// </summary>
         public RandValue SharedRandPreviousValue
-        { get; private set; }
+        { get; private set; } = new();
 
         /// <summary>
         /// Gets the current shared Random Value
         /// </summary>
         public RandValue SharedRandCurrentValue
-        { get; private set; }
+        { get; private set; } = new();
 
         /// <summary>
         /// Gets the Various Bandwidth Weights
         /// </summary>
         public Dictionary<string, int> BandwidthWeights
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets a List of Authorities that can produce this Consensus
         /// </summary>
         public DirectoryEntry[] DirectorySources
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets a List of all Tor Nodes
         /// </summary>
         public TorNode[] TorNodes
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Gets all signatures
         /// </summary>
         public DirectorySignature[] Signatures
-        { get; private set; }
+        { get; private set; } = [];
 
         /// <summary>
         /// Parses a Network Consensus
@@ -139,23 +136,29 @@ namespace TorLister
         /// <param name="DirectorySource">Network Consensus</param>
         public Directory(string DirectorySource)
         {
-            var Sources = new List<DirectoryEntry>();
-            var Nodes = new List<TorNode>();
-            var Sig = new List<DirectorySignature>();
+            var sources = new List<DirectoryEntry>();
+            var nodes = new List<TorNode>();
+            var sig = new List<DirectorySignature>();
 
-            using (var MS = new MemoryStream(Encoding.UTF8.GetBytes(DirectorySource.Replace("\n", "\r\n")), false))
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(DirectorySource.Replace("\n", "\r\n")), false))
             {
-                using (var SR = new StreamReader(MS))
+                using var reader = new StreamReader(ms);
+                //Verify Version
+                if (reader.ReadLine() != "network-status-version 3 microdesc")
                 {
-                    //Verify Version
-                    if (SR.ReadLine() != "network-status-version 3 microdesc")
+                    throw new ArgumentException("Directory Source doesn't looks like a Version 3 Microdescriptor");
+                }
+                while (!reader.EndOfStream)
+                {
+                    Console.Write('.');
+                    var line = reader.ReadLine();
+                    if (line == null)
                     {
-                        throw new ArgumentException("Directory Source doesn't looks like a Version 3 Microdescriptor");
+                        break;
                     }
-                    while (!SR.EndOfStream)
+                    var Segments = line.Split(' ');
+                    try
                     {
-                        var Line = SR.ReadLine();
-                        var Segments = Line.Split(' ');
                         switch (Segments[0])
                         {
                             case "vote-status":
@@ -174,7 +177,7 @@ namespace TorLister
                                 FreshUntil = DateTime.Parse($"{Segments[1]}T{Segments[2]}Z");
                                 break;
                             case "voting-delay":
-                                VotingDelays = new int[] { int.Parse(Segments[1]), int.Parse(Segments[2]) };
+                                VotingDelays = [int.Parse(Segments[1]), int.Parse(Segments[2])];
                                 break;
                             case "client-versions":
                                 ClientVersions = Segments[1].Split(',');
@@ -186,23 +189,23 @@ namespace TorLister
                                 KnownFlags = Segments.Skip(1).ToArray();
                                 break;
                             case "recommended-client-protocols":
-                                RecommendedClientVersions = new Dictionary<string, Version>();
+                                RecommendedClientVersions = [];
                                 AddVersions(RecommendedClientVersions, Segments.Skip(1));
                                 break;
                             case "recommended-relay-protocols":
-                                RecommendedRelayVersions = new Dictionary<string, Version>();
+                                RecommendedRelayVersions = [];
                                 AddVersions(RecommendedRelayVersions, Segments.Skip(1));
                                 break;
                             case "required-client-protocols":
-                                RequiredClientVersions = new Dictionary<string, Version>();
+                                RequiredClientVersions = [];
                                 AddVersions(RequiredClientVersions, Segments.Skip(1));
                                 break;
                             case "required-relay-protocols":
-                                RequiredRelayVersions = new Dictionary<string, Version>();
+                                RequiredRelayVersions = [];
                                 AddVersions(RequiredRelayVersions, Segments.Skip(1));
                                 break;
                             case "params":
-                                Params = new Dictionary<string, int>();
+                                Params = [];
                                 foreach (var P in Segments.Skip(1))
                                 {
                                     Params.Add(P.Split('=')[0], int.Parse(P.Split('=')[1]));
@@ -223,47 +226,52 @@ namespace TorLister
                                 };
                                 break;
                             case "dir-source":
-                                Sources.Add(new DirectoryEntry(Line)
+                                sources.Add(new DirectoryEntry(line)
                                 {
-                                    Contact = SR.ReadLine().Substring(8),
-                                    Digest = SR.ReadLine().Substring(12)
+                                    Contact = ReadLine(reader)[8..],
+                                    Digest = ReadLine(reader)[12..]
                                 });
                                 break;
                             case "bandwidth-weights":
-                                BandwidthWeights = new Dictionary<string, int>();
+                                BandwidthWeights = [];
                                 foreach (var Weight in Segments.Skip(1))
                                 {
                                     BandwidthWeights.Add(Weight.Split('=')[0], int.Parse(Weight.Split('=')[1]));
                                 }
                                 break;
                             case "directory-signature":
-                                Sig.Add(LoadSig(SR, Line));
+                                sig.Add(LoadSig(reader, line));
                                 break;
                             case "r":
-                                Nodes.Add(ReadNode(SR, Line));
+                                nodes.Add(ReadNode(reader, line));
                                 break;
                             case "directory-footer":
                                 //Don't care
                                 break;
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Debug.Print("Failed to parse '{0}' as valid line.", line);
+                        Debug.Print("[{0}]: {1}", ex.GetType().Name, ex.Message);
+                    }
                 }
             }
 
-            DirectorySources = Sources.ToArray();
-            TorNodes = Nodes.ToArray();
-            Signatures = Sig.ToArray();
+            DirectorySources = [.. sources];
+            TorNodes = [.. nodes];
+            Signatures = [.. sig];
         }
 
-        private DirectorySignature LoadSig(StreamReader SR, string Line)
+        private static DirectorySignature LoadSig(StreamReader reader, string line)
         {
-            var Sig = new DirectorySignature(Line.Split(' ').Skip(1).ToArray());
-            if (SR.ReadLine() == "-----BEGIN SIGNATURE-----")
+            var Sig = new DirectorySignature(line.Split(' ').Skip(1).ToArray());
+            if (reader.ReadLine() == "-----BEGIN SIGNATURE-----")
             {
                 Sig.Signature = "";
-                while (!SR.EndOfStream)
+                while (!reader.EndOfStream)
                 {
-                    var SigLine = SR.ReadLine();
+                    var SigLine = reader.ReadLine();
                     if (SigLine == "-----END SIGNATURE-----")
                     {
                         return Sig;
@@ -277,22 +285,34 @@ namespace TorLister
             throw new Exception("Directory Signature misses Signature Block");
         }
 
-        private TorNode ReadNode(StreamReader SR, string Line)
+        private static TorNode ReadNode(StreamReader reader, string line)
         {
-            var Node = new TorNode(Line);
+            var Node = new TorNode(line);
             for (var i = 0; i < 5; i++)
             {
-                Node.SetLine(SR.ReadLine());
+                Node.SetLine(ReadLine(reader));
             }
             return Node;
         }
 
-        private void AddVersions(Dictionary<string, Version> Dict, IEnumerable<string> Versions)
+        private static void AddVersions(Dictionary<string, ProtocolVersion> dict, IEnumerable<string> versions)
         {
-            foreach (string s in Versions)
+            foreach (string s in versions)
             {
-                Dict.Add(s.Split('=')[0], new Version(s.Split('=')[1]));
+                try
+                {
+                    dict.Add(s.Split('=')[0], new ProtocolVersion(s.Split('=')[1]));
+                }
+                catch
+                {
+                    //Invalid version string. Skip
+                }
             }
+        }
+
+        private static string ReadLine(StreamReader reader)
+        {
+            return reader.ReadLine() ?? throw new IOException("Unexpected EOF");
         }
     }
 }
