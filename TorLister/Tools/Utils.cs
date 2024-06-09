@@ -18,7 +18,8 @@ namespace TorLister.Tools
         static Utils()
         {
             jsonOpt = new(JsonSerializerOptions.Default);
-            jsonOpt.Converters.Add(new IpConverter());
+            jsonOpt.Converters.Add(new IPEndPointConverter());
+            jsonOpt.Converters.Add(new IPAddressConverter());
         }
 
 
