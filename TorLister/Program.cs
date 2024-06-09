@@ -130,7 +130,7 @@ namespace TorLister
             {
                 Console.Error.WriteLine("Taking consensus from cache");
                 consensus = Utils.Deserialize<Directory>(cacheEntry.Data)
-                    ?? throw new InvalidOperationException("Possible cache datage. Deserialization failed");
+                    ?? throw new InvalidOperationException("Possible cache damage. Deserialization failed");
                 if (consensus.ValidUntil < DateTime.UtcNow)
                 {
                     consensus = null;
