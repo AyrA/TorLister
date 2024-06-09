@@ -263,6 +263,11 @@ namespace TorLister.Tor
             Signatures = [.. sig];
         }
 
+        /// <summary>
+        /// For deserialization purposes
+        /// </summary>
+        public Directory() { }
+
         private static DirectorySignature LoadSig(StreamReader reader, string line)
         {
             var Sig = new DirectorySignature(line.Split(' ').Skip(1).ToArray());
