@@ -6,17 +6,17 @@ namespace TorLister.Tor
     [Serializable]
     public struct TorNode
     {
-        public string? Name;
-        public byte[]? Hash;
-        public DateTime OnlineSince = DateTime.MinValue;
-        public IPAddress? IP = IPAddress.Any;
-        public ushort OrPort;
-        public ushort HttpPort;
-        public string? m;
-        public string[] Services = [];
-        public string? TorVersion;
-        public Dictionary<string, ProtocolVersion> Protocols = [];
-        public int Bandwidth;
+        public string? Name { get; set; }
+        public byte[]? Hash { get; set; }
+        public DateTime OnlineSince { get; set; }
+        public IPAddress? IP { get; set; }
+        public ushort OrPort { get; set; }
+        public ushort HttpPort { get; set; }
+        public string? MValue { get; set; } //Unknown
+        public string[] Services { get; set; } = [];
+        public string? TorVersion { get; set; }
+        public Dictionary<string, ProtocolVersion> Protocols { get; set; } = [];
+        public int Bandwidth { get; set; }
 
         public TorNode(string FirstLine)
         {
@@ -35,7 +35,7 @@ namespace TorLister.Tor
                     RelayLine(Line);
                     break;
                 case "m":
-                    m = Line[2..];
+                    MValue = Line[2..];
                     break;
                 case "s":
                     Services = Line.Split(' ').Skip(1).ToArray();

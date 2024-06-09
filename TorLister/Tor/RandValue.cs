@@ -1,11 +1,9 @@
-﻿using System;
-
-namespace TorLister.Tor
+﻿namespace TorLister.Tor
 {
     [Serializable]
-    public struct RandValue
+    public class RandValue
     {
-        public int RandomValue;
-        public byte[] RandomNonce;
+        public int RandomValue { get; set; }
+        public byte[]? RandomNonce { get; set; }
     }
 }

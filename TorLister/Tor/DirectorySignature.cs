@@ -1,11 +1,23 @@
 ﻿namespace TorLister.Tor
 {
     [Serializable]
-    public struct DirectorySignature(string[] Segments)
+    public class DirectorySignature
     {
-        public string SignatureType = Segments[0];
-        public string Hash1 = Segments[1];
-        public string Hash2 = Segments[2];
-        public string? Signature = null;
+        public string SignatureType { get; set; }
+        public string Hash1 { get; set; }
+        public string Hash2 { get; set; }
+        public string? Signature { get; set; } = null;
+
+        public DirectorySignature(string[] segments)
+        {
+            SignatureType = segments[0];
+            Hash1 = segments[1];
+            Hash2 = segments[2];
+        }
+
+        public DirectorySignature()
+        {
+            SignatureType = Hash1 = Hash2 = string.Empty;
+        }
     }
 }

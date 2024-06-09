@@ -6,12 +6,12 @@ namespace TorLister.Tor
     [Serializable]
     public struct DirectoryEntry
     {
-        public string? Name;
-        public string? SHA1;
-        public IPEndPoint? OnionEP;
-        public IPEndPoint? HttpEP;
-        public string? Contact;
-        public string? Digest;
+        public string? Name { get; set; }
+        public string? SHA1 { get; set; }
+        public IPEndPoint? OnionEP { get; set; }
+        public IPEndPoint? HttpEP { get; set; }
+        public string? Contact { get; set; }
+        public string? Digest { get; set; }
 
         public DirectoryEntry(string SourceLine)
         {

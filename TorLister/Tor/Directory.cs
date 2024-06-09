@@ -11,112 +11,112 @@ namespace TorLister.Tor
         /// </summary>
         /// <remarks>This should always be "consensus"</remarks>
         public string VoteStatus
-        { get; private set; } = string.Empty;
+        { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets the Consensus Method
         /// </summary>
         /// <remarks>This should always be 26</remarks>
         public int ConsensusMethod
-        { get; private set; }
+        { get; set; }
 
         /// <summary>
         /// Gets the Date after which this consensus is valid
         /// </summary>
         public DateTime ValidAfter
-        { get; private set; }
+        { get; set; }
 
         /// <summary>
         /// Gets the Date until this Consensus is considered fresh
         /// </summary>
         /// <remarks>Use this to figure out when to refresh the cache</remarks>
         public DateTime FreshUntil
-        { get; private set; }
+        { get; set; }
 
         /// <summary>
         /// Gets the Date after which this Consensus is considered outdated and invalid
         /// </summary>
         /// <remarks>Unless no Network Connection is available you should really reload after this time</remarks>
         public DateTime ValidUntil
-        { get; private set; }
+        { get; set; }
 
         /// <summary>
         /// Gets the two voting Delay Values
         /// </summary>
         public int[] VotingDelays
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets all Supported Client Versions
         /// </summary>
         public string[] ClientVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets all Supported Server Versions
         /// </summary>
         public string[] ServerVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets all known Service Flags
         /// </summary>
         public string[] KnownFlags
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the Recommended Client Versions for Services
         /// </summary>
         public Dictionary<string, ProtocolVersion> RecommendedClientVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the Recommended Relay Versions for Services
         /// </summary>
         public Dictionary<string, ProtocolVersion> RecommendedRelayVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the Required Client Versions for Services
         /// </summary>
         public Dictionary<string, ProtocolVersion> RequiredClientVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the Required Relay Versions for Services
         /// </summary>
         public Dictionary<string, ProtocolVersion> RequiredRelayVersions
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the Parameters
         /// </summary>
         public Dictionary<string, int> Params
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets the previous shared Random Value
         /// </summary>
         public RandValue SharedRandPreviousValue
-        { get; private set; } = new();
+        { get; set; } = new();
 
         /// <summary>
         /// Gets the current shared Random Value
         /// </summary>
         public RandValue SharedRandCurrentValue
-        { get; private set; } = new();
+        { get; set; } = new();
 
         /// <summary>
         /// Gets the Various Bandwidth Weights
         /// </summary>
         public Dictionary<string, int> BandwidthWeights
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets a List of Authorities that can produce this Consensus
         /// </summary>
         public DirectoryEntry[] DirectorySources
-        { get; private set; } = [];
+        { get; set; } = [];
 
         /// <summary>
         /// Gets a List of all Tor Nodes
